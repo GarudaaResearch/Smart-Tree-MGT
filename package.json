@@ -1,0 +1,28 @@
+{
+  "name": "smart-tree-management",
+  "version": "1.0.0",
+  "description": "AI-Driven IoT Framework for Tree Behaviour Analysis and Smart Tree Monitoring",
+  "main": "frontend/index.html",
+  "scripts": {
+    "start": "python -m http.server 8080 --directory frontend",
+    "dev": "python -m http.server 8080 --directory frontend",
+    "build": "echo 'Static build complete'",
+    "deploy": "echo 'Deploy to Netlify'"
+  },
+  "keywords": [
+    "iot",
+    "tree-monitoring",
+    "ai",
+    "environmental-monitoring",
+    "smart-city",
+    "agriculture"
+  ],
+  "author": "Prof. Anjit Raja R, Rathinam Global University",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GarudaaResearch/Smart-Tree-MGT.git"
+  }
+}
