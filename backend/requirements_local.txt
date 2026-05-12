@@ -1,0 +1,30 @@
+# ============================================================
+# TreeSense AI — Minimal Local Requirements (No Docker)
+# Compatible with Python 3.12 – 3.14
+# Install: pip install -r requirements_local.txt --prefer-binary
+# ============================================================
+
+# Web Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Database — SQLite (no PostgreSQL needed!)
+sqlalchemy[asyncio]
+aiosqlite
+
+# Data Validation
+pydantic
+pydantic-settings
+
+# AI / ML (core only)
+numpy
+pandas
+scikit-learn
+joblib
+
+# Utilities
+python-dotenv
+loguru
+aiofiles
+httpx

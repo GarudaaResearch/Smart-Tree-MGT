@@ -1,0 +1,172 @@
+version: "3.9"
+
+# ============================================================
+# TreeSense AI — Docker Compose Stack
+# Project: AI-Driven IoT Framework for Tree Behaviour Analysis
+# Author: Prof. Anjit Raja R — RGU CII | Version: 1.0.0
+# Usage:  docker compose up -d
+# ============================================================
+
+networks:
+  treesense-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  mosquitto_data:
+  mosquitto_logs:
+
+services:
+
+  # ─── PostgreSQL + PostGIS ─────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: treesense-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       treesense_ai
+      POSTGRES_USER:     treesense
+      POSTGRES_PASSWORD: treesense_secret_2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgres_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - treesense-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U treesense -d treesense_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis (Cache + Pub/Sub) ──────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: treesense-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - treesense-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ─── Eclipse Mosquitto (MQTT Broker) ─────────────────────
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: treesense-mqtt
+    restart: unless-stopped
+    volumes:
+      - ./deployment/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    ports:
+      - "1883:1883"    # MQTT
+      - "9001:9001"    # MQTT over WebSocket
+    networks:
+      - treesense-net
+
+  # ─── FastAPI Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: treesense-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:   postgresql+asyncpg://treesense:treesense_secret_2026@db:5432/treesense_ai
+      REDIS_URL:      redis://redis:6379
+      MQTT_BROKER:    mqtt
+      MQTT_PORT:      "1883"
+      SECRET_KEY:     treesense-jwt-secret-key-2026
+      ENVIRONMENT:    production
+      LOG_LEVEL:      info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    networks:
+      - treesense-net
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Nginx (Frontend + Reverse Proxy) ────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: treesense-nginx
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./deployment/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - treesense-net
+
+  # ─── Celery Worker (Background AI Jobs) ──────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: treesense-celery
+    restart: unless-stopped
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL: postgresql+asyncpg://treesense:treesense_secret_2026@db:5432/treesense_ai
+      REDIS_URL:    redis://redis:6379
+      MQTT_BROKER:  mqtt
+    depends_on:
+      - db
+      - redis
+    networks:
+      - treesense-net
+
+  # ─── Prometheus (Metrics) ─────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: treesense-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - treesense-net
+
+  # ─── Grafana (Metrics Dashboard) ─────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: treesense-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin2026
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - treesense-net
+    volumes:
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning

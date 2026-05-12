@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TreeSense AI — Login</title>
+<meta name="description" content="Secure login portal for TreeSense AI Smart Tree Monitoring System — RGU CII"/>
+<meta name="author" content="Prof. Anjit Raja R, Rathinam Global University"/>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/login.css"/>
+</head>
+<body>
+
+<!-- ── Animated Background ── -->
+<div class="login-bg"></div>
+<div class="grid-overlay"></div>
+<div class="particles" id="particles"></div>
+
+<!-- ── Main Layout ── -->
+<div class="login-wrapper">
+
+  <!-- LEFT — Brand Panel -->
+  <div class="brand-panel">
+    <div class="brand-logo">
+      <div class="logo-icon">🌳</div>
+      <div class="logo-text">
+        <span class="logo-name">TreeSense AI</span>
+        <span class="logo-sub">Smart Monitoring · RGU CII</span>
+      </div>
+    </div>
+
+    <div class="brand-headline">
+      <h1>Monitor Trees.<br/><span>Protect the Planet.</span></h1>
+      <p>AI-Driven IoT Framework for real-time tree health monitoring, climatic analysis, and geo-tagged smart tree identification across Rathinam Global University.</p>
+    </div>
+
+    <div class="feature-pills">
+      <span class="pill">🤖 AI Health Scoring</span>
+      <span class="pill">🗺 GIS Mapping</span>
+      <span class="pill">📡 Live IoT Sensors</span>
+      <span class="pill">🌿 Carbon Tracker</span>
+      <span class="pill">▦ QR Tree Identity</span>
+      <span class="pill">🔔 Smart Alerts</span>
+    </div>
+
+    <div class="brand-stats">
+      <div class="stat-box">
+        <div class="stat-val" id="counterTrees">0</div>
+        <div class="stat-lbl">Trees Monitored</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="counterNodes">0</div>
+        <div class="stat-lbl">IoT Nodes Online</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="counterHealth">0%</div>
+        <div class="stat-lbl">Network Health</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT — Login Card -->
+  <div class="login-card">
+    <div class="card-top">
+      <h2>Welcome back 👋</h2>
+      <p>Sign in to access the TreeSense dashboard</p>
+    </div>
+
+    <!-- Role Tabs -->
+    <div class="role-tabs" role="tablist" aria-label="Select login role">
+      <button class="role-tab active" id="tab-admin" role="tab" aria-selected="true"
+              onclick="switchRole('admin')">
+        <span class="tab-icon">🛡</span> Administrator
+      </button>
+      <button class="role-tab" id="tab-user" role="tab" aria-selected="false"
+              onclick="switchRole('user')">
+        <span class="tab-icon">👤</span> User
+      </button>
+    </div>
+
+    <!-- Login Form -->
+    <form class="login-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="username" name="username"
+                 placeholder="Enter your username"
+                 autocomplete="username" required/>
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" name="password"
+                 placeholder="Enter your password"
+                 autocomplete="current-password" required/>
+          <button type="button" class="eye-toggle" id="eyeToggle"
+                  onclick="togglePassword()" aria-label="Show/hide password">👁</button>
+        </div>
+      </div>
+
+      <!-- Credential Hint Box -->
+      <div class="cred-hint" id="credHint">
+        <div>🛡 <span>Admin</span> — username: <span>admin</span> &nbsp;|&nbsp; password: <span>treesense@admin</span></div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-msg" id="errorMsg" role="alert">
+        <span>⚠</span>
+        <span id="errorText">Invalid credentials. Please try again.</span>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn-login" id="loginBtn">
+        <div class="spinner"></div>
+        <span class="btn-text">Sign In to Dashboard →</span>
+      </button>
+
+    </form>
+
+    <div class="login-footer">
+      TreeSense AI v2.0 &nbsp;·&nbsp; RGU Centre for Innovation &amp; Incubation<br/>
+      Developed by <a href="#" target="_blank">Prof. Anjit Raja R</a> &nbsp;·&nbsp; Rathinam Global University
+    </div>
+  </div>
+
+</div>
+
+<!-- Version Badge -->
+<div class="version-badge">v2.0.0 · build 2026.05</div>
+
+<script>
+/* ─── CREDENTIALS ─────────────────────────────── */
+const CREDENTIALS = {
+  admin: { username: 'admin',    password: 'treesense@admin', role: 'Admin',
+           display: 'Administrator', avatar: 'AD', badge: '🛡' },
+  user:  { username: 'user',     password: 'treesense@user',  role: 'User',
+           display: 'Viewer',        avatar: 'US', badge: '👤' }
+};
+
+let activeRole = 'admin';
+
+/* ─── ROLE SWITCH ─────────────────────────────── */
+function switchRole(role) {
+  activeRole = role;
+  document.querySelectorAll('.role-tab').forEach(t => {
+    t.classList.toggle('active', t.id === 'tab-' + role);
+    t.setAttribute('aria-selected', t.id === 'tab-' + role);
+  });
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  hideError();
+
+  const hint = document.getElementById('credHint');
+  const cred = CREDENTIALS[role];
+  hint.innerHTML = `
+    <div>${cred.badge} <span>${cred.display}</span> — username: <span>${cred.username}</span>
+    &nbsp;|&nbsp; password: <span>${cred.password}</span></div>`;
+}
+
+/* ─── PASSWORD TOGGLE ─────────────────────────── */
+function togglePassword() {
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('eyeToggle').textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+/* ─── LOGIN HANDLER ───────────────────────────── */
+function handleLogin(e) {
+  e.preventDefault();
+  hideError();
+
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+
+  // Show loading
+  btn.classList.add('loading');
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+
+    const cred = CREDENTIALS[activeRole];
+    if (username === cred.username && password === cred.password) {
+      // Save session
+      const session = {
+        username: cred.username,
+        role: cred.role,
+        display: cred.display,
+        avatar: cred.avatar,
+        badge: cred.badge,
+        loginTime: new Date().toISOString()
+      };
+      sessionStorage.setItem('ts_session', JSON.stringify(session));
+
+      // Success animation
+      btn.innerHTML = '<span>✅ Authenticated! Redirecting...</span>';
+      btn.style.background = 'linear-gradient(135deg, #15803d, #22c55e)';
+      setTimeout(() => { window.location.href = 'index.html'; }, 800);
+    } else {
+      // Determine error
+      let msg = 'Invalid credentials. Please check your username and password.';
+      if (username === cred.username && password !== cred.password) {
+        msg = 'Incorrect password. Please try again.';
+      } else if (username !== cred.username) {
+        msg = `Unknown username for ${cred.display} role.`;
+      }
+      showError(msg);
+    }
+  }, 900);
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  document.getElementById('errorText').textContent = msg;
+  el.classList.add('show');
+}
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('show');
+}
+
+/* ─── ANIMATED COUNTERS ───────────────────────── */
+function animateCounter(id, target, suffix, duration) {
+  const el = document.getElementById(id);
+  let start = 0, step = target / (duration / 16);
+  const timer = setInterval(() => {
+    start = Math.min(start + step, target);
+    el.textContent = Math.floor(start) + suffix;
+    if (start >= target) clearInterval(timer);
+  }, 16);
+}
+
+/* ─── FLOATING PARTICLES ──────────────────────── */
+function createParticles() {
+  const container = document.getElementById('particles');
+  const colors = ['#22c55e','#16a34a','#38bdf8','#86efac','#4ade80'];
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 6 + 2;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${8 + Math.random()*12}s;
+      animation-delay:${Math.random()*10}s;
+    `;
+    container.appendChild(p);
+  }
+}
+
+/* ─── ALREADY LOGGED IN? ──────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  // If already logged in, go straight to dashboard
+  if (sessionStorage.getItem('ts_session')) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  createParticles();
+  animateCounter('counterTrees',  247, '',  1800);
+  animateCounter('counterNodes',  241, '',  1800);
+  animateCounter('counterHealth', 97,  '%', 1800);
+
+  // Auto-fill on Enter
+  document.getElementById('username').focus();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TreeSense AI — Smart Tree Monitoring Dashboard</title>
+<meta name="description" content="AI-Driven IoT Framework for Tree Behaviour Analysis, Climatic Monitoring and Geo-Tagged Smart Tree Identification — Rathinam Global University CII"/>
+<meta name="author" content="Prof. Anjit Raja R, Rathinam Global University"/>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<!-- Leaflet Maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Chart.js & QRCode -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<link rel="stylesheet" href="css/dashboard.css"/>
+
+<!-- Auth Guard -->
+<script>
+(function(){
+  var s = sessionStorage.getItem('ts_session');
+  if(!s){ window.location.replace('login.html'); }
+})();
+</script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR NAVIGATION
+══════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🌳</div>
+    <div class="brand-text">
+      <span class="brand-name">TreeSense</span>
+      <span class="brand-sub">AI Monitor</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">MONITORING</div>
+    <a href="#" class="nav-item active" data-panel="dashboard" id="nav-dashboard">
+      <span class="nav-icon">⬡</span><span>Dashboard</span>
+    </a>
+    <a href="#" class="nav-item" data-panel="map" id="nav-map">
+      <span class="nav-icon">🗺</span><span>GIS Map</span>
+    </a>
+    <a href="#" class="nav-item" data-panel="sensors" id="nav-sensors">
+      <span class="nav-icon">📡</span><span>Live Sensors</span>
+    </a>
+    <a href="#" class="nav-item" data-panel="trees" id="nav-trees">
+      <span class="nav-icon">🌲</span><span>Tree Registry</span>
+    </a>
+
+    <div class="nav-section-label" style="margin-top:1.5rem">ANALYTICS</div>
+    <a href="#" class="nav-item" data-panel="ai" id="nav-ai">
+      <span class="nav-icon">🤖</span><span>AI Insights</span>
+    </a>
+    <a href="#" class="nav-item" data-panel="alerts" id="nav-alerts">
+      <span class="nav-icon">🔔</span><span>Alerts <span class="badge-count" id="alert-badge">3</span></span>
+    </a>
+    <a href="#" class="nav-item" data-panel="analytics" id="nav-analytics">
+      <span class="nav-icon">📊</span><span>Analytics</span>
+    </a>
+    <a href="#" class="nav-item" data-panel="carbon" id="nav-carbon">
+      <span class="nav-icon">🌿</span><span>Carbon Tracker</span>
+    </a>
+
+    <div class="nav-section-label" style="margin-top:1.5rem">SYSTEM</div>
+    <a href="#" class="nav-item" data-panel="qr" id="nav-qr">
+      <span class="nav-icon">▦</span><span>QR Identity</span>
+    </a>
+    <a href="#" class="nav-item" data-panel="research" id="nav-research">
+      <span class="nav-icon">🔬</span><span>Research</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="connection-status" id="conn-status">
+      <span class="status-dot online"></span>
+      <span>Live Feed Active</span>
+    </div>
+    <div class="sidebar-credit">RGU CII | Prof. Anjit Raja R</div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+      <div class="page-title" id="pageTitle">Dashboard Overview</div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-clock" id="liveClock"></div>
+      <div class="weather-chip">🌡 28.4°C &nbsp;|&nbsp; 67% RH</div>
+      <!-- User Session Info -->
+      <div class="user-session" id="userSession">
+        <div class="user-avatar" id="userAvatar">AR</div>
+        <div class="user-meta">
+          <div class="user-name" id="userName">Prof. Anjit</div>
+          <div class="user-role-badge" id="userRoleBadge">Admin</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn" onclick="doLogout()" title="Sign Out">⏻</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ PANEL: DASHBOARD ══ -->
+  <section class="panel active" id="panel-dashboard">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon trees-icon">🌳</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-total">247</div>
+          <div class="kpi-label">Total Trees</div>
+          <div class="kpi-trend up">▲ 12 this month</div>
+        </div>
+        <canvas class="kpi-spark" id="spark-total"></canvas>
+      </div>
+      <div class="kpi-card healthy">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-healthy">198</div>
+          <div class="kpi-label">Healthy Trees</div>
+          <div class="kpi-trend up">▲ 80.2%</div>
+        </div>
+        <canvas class="kpi-spark" id="spark-healthy"></canvas>
+      </div>
+      <div class="kpi-card warning">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-atrisk">36</div>
+          <div class="kpi-label">At Risk</div>
+          <div class="kpi-trend down">▼ 5 resolved</div>
+        </div>
+        <canvas class="kpi-spark" id="spark-risk"></canvas>
+      </div>
+      <div class="kpi-card critical">
+        <div class="kpi-icon">🚨</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-critical">13</div>
+          <div class="kpi-label">Critical</div>
+          <div class="kpi-trend down">▲ 2 new alerts</div>
+        </div>
+        <canvas class="kpi-spark" id="spark-critical"></canvas>
+      </div>
+      <div class="kpi-card carbon">
+        <div class="kpi-icon">🌿</div>
+        <div class="kpi-body">
+          <div class="kpi-value">18.4t</div>
+          <div class="kpi-label">CO₂ Sequestered/yr</div>
+          <div class="kpi-trend up">▲ 2.1t vs last year</div>
+        </div>
+        <canvas class="kpi-spark" id="spark-carbon"></canvas>
+      </div>
+      <div class="kpi-card sensors">
+        <div class="kpi-icon">📡</div>
+        <div class="kpi-body">
+          <div class="kpi-value">241</div>
+          <div class="kpi-label">Nodes Online</div>
+          <div class="kpi-trend up">97.6% uptime</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="dashboard-row">
+      <!-- Live Sensor Grid -->
+      <div class="card sensor-grid-card">
+        <div class="card-header">
+          <span class="card-title">📡 Live Environmental Feed</span>
+          <span class="live-dot"></span>
+        </div>
+        <div class="sensor-grid" id="sensorGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Health Score Gauge -->
+      <div class="card gauge-card">
+        <div class="card-header">
+          <span class="card-title">🤖 AI Health Score</span>
+        </div>
+        <div class="gauge-container">
+          <canvas id="healthGauge" width="200" height="200"></canvas>
+          <div class="gauge-label">
+            <div class="gauge-value" id="gaugeValue">87</div>
+            <div class="gauge-sub">Overall Network Health</div>
+            <div class="gauge-status healthy-label">HEALTHY</div>
+          </div>
+        </div>
+        <div class="health-breakdown">
+          <div class="breakdown-item"><span>Soil Moisture</span><div class="mini-bar"><div class="mini-fill" style="width:72%;background:#22c55e"></div></div><span>72%</span></div>
+          <div class="breakdown-item"><span>Temperature</span><div class="mini-bar"><div class="mini-fill" style="width:85%;background:#22c55e"></div></div><span>Optimal</span></div>
+          <div class="breakdown-item"><span>Nutrients (N/P/K)</span><div class="mini-bar"><div class="mini-fill" style="width:58%;background:#f59e0b"></div></div><span>58%</span></div>
+          <div class="breakdown-item"><span>Air Quality</span><div class="mini-bar"><div class="mini-fill" style="width:90%;background:#22c55e"></div></div><span>Good</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="dashboard-row">
+      <div class="card chart-card">
+        <div class="card-header">
+          <span class="card-title">🌡 Temperature & Humidity (24h)</span>
+          <select class="chart-selector" id="tempChartTree">
+            <option value="TBA-RGU-0001">Banyan Tree #001</option>
+            <option value="TBA-RGU-0002">Teak Tree #002</option>
+            <option value="TBA-RGU-0003">Mango Tree #003</option>
+          </select>
+        </div>
+        <canvas id="tempHumChart" height="120"></canvas>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-header">
+          <span class="card-title">🌱 Soil Parameters (24h)</span>
+          <select class="chart-selector">
+            <option>All Zones</option>
+            <option>RGU Main</option>
+            <option>Sports Ground</option>
+          </select>
+        </div>
+        <canvas id="soilChart" height="120"></canvas>
+      </div>
+    </div>
+
+    <!-- Alert Feed + Tree Status -->
+    <div class="dashboard-row">
+      <div class="card alerts-feed-card">
+        <div class="card-header">
+          <span class="card-title">🔔 Recent Alerts</span>
+          <a href="#" class="view-all" data-panel="alerts">View All</a>
+        </div>
+        <div class="alerts-feed" id="alertsFeed"></div>
+      </div>
+
+      <div class="card tree-status-card">
+        <div class="card-header">
+          <span class="card-title">🌲 Tree Health Distribution</span>
+        </div>
+        <canvas id="healthDonut" height="160"></canvas>
+        <div class="donut-legend">
+          <span class="leg-item"><span class="leg-dot" style="background:#22c55e"></span>Excellent (80)</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#86efac"></span>Healthy (118)</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#f59e0b"></span>Moderate (36)</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#ef4444"></span>Critical (13)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PANEL: GIS MAP ══ -->
+  <section class="panel" id="panel-map">
+    <div class="map-controls">
+      <div class="map-filter-group">
+        <button class="map-btn active" data-filter="all">All Trees</button>
+        <button class="map-btn" data-filter="healthy">Healthy</button>
+        <button class="map-btn" data-filter="at_risk">At Risk</button>
+        <button class="map-btn" data-filter="critical">Critical</button>
+      </div>
+      <div class="map-search">
+        <input type="text" id="mapSearch" placeholder="🔍 Search tree or location..."/>
+      </div>
+    </div>
+    <div id="leafletMap" style="height: calc(100vh - 180px); border-radius: 16px;"></div>
+  </section>
+
+  <!-- ══ PANEL: LIVE SENSORS ══ -->
+  <section class="panel" id="panel-sensors">
+    <div class="section-header">
+      <h2>Real-Time Sensor Data</h2>
+      <div class="tree-selector-group">
+        <label>Select Tree:</label>
+        <select id="sensorTreeSelect" class="chart-selector large">
+          <option value="TBA-RGU-0001">🌳 TBA-RGU-0001 — Banyan (East Gate)</option>
+          <option value="TBA-RGU-0002">🌳 TBA-RGU-0002 — Teak (North Road)</option>
+          <option value="TBA-RGU-0003">🌳 TBA-RGU-0003 — Mango (Canteen)</option>
+          <option value="TBA-RGU-0004">🌳 TBA-RGU-0004 — Neem (Library)</option>
+          <option value="TBA-RGU-0005">🌳 TBA-RGU-0005 — Rain Tree (Parking)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sensors-full-grid" id="sensorsFullGrid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="dashboard-row" style="margin-top:1.5rem">
+      <div class="card chart-card full-width">
+        <div class="card-header">
+          <span class="card-title">📈 Sensor Time-Series (7 Days)</span>
+          <select class="chart-selector" id="sensorParamSelect">
+            <option value="temperature">Temperature (°C)</option>
+            <option value="humidity">Humidity (%)</option>
+            <option value="soil_moisture">Soil Moisture (%)</option>
+            <option value="co2_ppm">CO₂ (ppm)</option>
+            <option value="aqi">Air Quality Index</option>
+            <option value="light_lux">Light (lux)</option>
+          </select>
+        </div>
+        <canvas id="timeSeriesChart" height="100"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PANEL: TREE REGISTRY ══ -->
+  <section class="panel" id="panel-trees">
+    <div class="section-header">
+      <h2>Tree Registry</h2>
+      <div class="header-actions">
+        <input type="text" class="search-input" id="treeSearch" placeholder="🔍 Search trees..."/>
+        <button class="btn-primary" id="registerTreeBtn">+ Register Tree</button>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="data-table" id="treeTable">
+        <thead>
+          <tr>
+            <th>Tree ID</th><th>Common Name</th><th>Scientific Name</th>
+            <th>Location</th><th>Age</th><th>Health</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="treeTableBody"><!-- Populated by JS --></tbody>
+      </table>
+    </div>
+
+    <!-- Register Tree Modal -->
+    <div class="modal" id="registerModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Register New Tree</h3>
+          <button class="modal-close" id="closeModal">✕</button>
+        </div>
+        <form class="register-form" id="registerForm">
+          <div class="form-row">
+            <div class="form-group"><label>Common Name *</label><input type="text" id="f-common" placeholder="Banyan Tree" required/></div>
+            <div class="form-group"><label>Scientific Name</label><input type="text" id="f-scientific" placeholder="Ficus benghalensis"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Latitude *</label><input type="number" id="f-lat" step="0.000001" placeholder="11.016800" required/></div>
+            <div class="form-group"><label>Longitude *</label><input type="number" id="f-lon" step="0.000001" placeholder="76.955800" required/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Location Name</label><input type="text" id="f-location" placeholder="Campus East Gate"/></div>
+            <div class="form-group"><label>Age (Years)</label><input type="number" id="f-age" placeholder="10"/></div>
+          </div>
+          <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Additional observations..."></textarea></div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="cancelRegister">Cancel</button>
+            <button type="submit" class="btn-primary">Register & Generate QR</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PANEL: AI INSIGHTS ══ -->
+  <section class="panel" id="panel-ai">
+    <div class="section-header"><h2>🤖 AI Intelligence Center</h2></div>
+    <div class="ai-grid">
+      <div class="card ai-card">
+        <div class="card-header"><span class="card-title">Disease Risk Map</span></div>
+        <div class="ai-risk-list" id="diseaseRiskList"></div>
+      </div>
+      <div class="card ai-card">
+        <div class="card-header"><span class="card-title">Growth Forecast (30-Day)</span></div>
+        <canvas id="growthChart" height="200"></canvas>
+      </div>
+      <div class="card ai-card full-width-card">
+        <div class="card-header"><span class="card-title">📋 AI Recommendations</span></div>
+        <div class="recommendations-list" id="recommendationsList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PANEL: ALERTS ══ -->
+  <section class="panel" id="panel-alerts">
+    <div class="section-header">
+      <h2>Alert Management</h2>
+      <div class="alert-filters">
+        <button class="filter-btn active" data-sev="all">All</button>
+        <button class="filter-btn critical-btn" data-sev="critical">Critical</button>
+        <button class="filter-btn warning-btn" data-sev="high">High</button>
+        <button class="filter-btn medium-btn" data-sev="medium">Medium</button>
+      </div>
+    </div>
+    <div class="alerts-table-container" id="alertsContainer"></div>
+  </section>
+
+  <!-- ══ PANEL: CARBON TRACKER ══ -->
+  <section class="panel" id="panel-carbon">
+    <div class="section-header"><h2>🌿 Carbon Sequestration Tracker</h2></div>
+    <div class="carbon-kpis">
+      <div class="carbon-kpi"><div class="ck-value">18.4t</div><div class="ck-label">Annual CO₂ Sequestered</div></div>
+      <div class="carbon-kpi"><div class="ck-value">8,694 kg</div><div class="ck-label">Total Carbon Stock</div></div>
+      <div class="carbon-kpi"><div class="ck-value">$276</div><div class="ck-label">Carbon Credits (Est.)</div></div>
+      <div class="carbon-kpi"><div class="ck-value">247</div><div class="ck-label">Trees Contributing</div></div>
+    </div>
+    <div class="dashboard-row">
+      <div class="card chart-card"><div class="card-header"><span class="card-title">Monthly CO₂ Sequestration</span></div><canvas id="carbonChart" height="140"></canvas></div>
+      <div class="card chart-card"><div class="card-header"><span class="card-title">Top Carbon Sequestering Trees</span></div><canvas id="carbonTopChart" height="140"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ══ PANEL: QR IDENTITY ══ -->
+  <section class="panel" id="panel-qr">
+    <div class="section-header">
+      <h2>▦ QR Smart Tree Identity</h2>
+      <select class="chart-selector large" id="qrTreeSelect">
+        <option value="TBA-RGU-0001">TBA-RGU-0001 — Banyan Tree</option>
+        <option value="TBA-RGU-0002">TBA-RGU-0002 — Teak Tree</option>
+        <option value="TBA-RGU-0003">TBA-RGU-0003 — Mango Tree</option>
+        <option value="TBA-RGU-0004">TBA-RGU-0004 — Neem Tree</option>
+        <option value="TBA-RGU-0005">TBA-RGU-0005 — Rain Tree</option>
+      </select>
+    </div>
+    <div class="qr-layout">
+      <div class="qr-card-display" id="qrCardDisplay"></div>
+      <div class="card qr-details-panel">
+        <div class="card-header"><span class="card-title">Tree Digital Passport</span></div>
+        <div class="qr-details-body" id="qrDetails"></div>
+        <div class="qr-actions">
+          <button class="btn-primary" id="downloadQR">⬇ Download QR</button>
+          <button class="btn-secondary" id="printQR">🖨 Print Card</button>
+          <button class="btn-secondary" id="shareQR">📤 Share</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PANEL: RESEARCH ══ -->
+  <section class="panel" id="panel-research">
+    <div class="section-header"><h2>🔬 Research & Data Export</h2></div>
+    <div class="research-grid">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Export Dataset</span></div>
+        <div class="export-form">
+          <div class="form-group"><label>Date Range</label>
+            <div class="date-row">
+              <input type="date" id="exportFrom" class="form-control"/>
+              <input type="date" id="exportTo"   class="form-control"/>
+            </div>
+          </div>
+          <div class="form-group"><label>Parameters</label>
+            <div class="checkbox-grid">
+              <label><input type="checkbox" checked/> Temperature</label>
+              <label><input type="checkbox" checked/> Humidity</label>
+              <label><input type="checkbox" checked/> Soil Moisture</label>
+              <label><input type="checkbox" checked/> Soil pH</label>
+              <label><input type="checkbox" checked/> NPK</label>
+              <label><input type="checkbox" checked/> CO₂</label>
+              <label><input type="checkbox" checked/> AQI</label>
+              <label><input type="checkbox" checked/> Light</label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Format</label>
+              <select class="chart-selector"><option>CSV</option><option>JSON</option><option>Excel</option></select>
+            </div>
+          </div>
+          <button class="btn-primary full-width" id="exportBtn">📥 Generate Export</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📄 Research Metrics</span></div>
+        <div class="research-stats">
+          <div class="r-stat"><span class="r-val">94.2M</span><span class="r-lbl">Data Points Collected</span></div>
+          <div class="r-stat"><span class="r-val">365 days</span><span class="r-lbl">Monitoring Duration</span></div>
+          <div class="r-stat"><span class="r-val">18</span><span class="r-lbl">Parameters per Tree</span></div>
+          <div class="r-stat"><span class="r-val">247</span><span class="r-lbl">Active Tree Nodes</span></div>
+          <div class="r-stat"><span class="r-val">99.1%</span><span class="r-lbl">Data Accuracy</span></div>
+          <div class="r-stat"><span class="r-val">3</span><span class="r-lbl">AI Models Deployed</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Tree Detail Popup -->
+<div class="tree-popup" id="treePopup" style="display:none">
+  <div class="popup-content" id="popupContent"></div>
+  <button class="popup-close" id="popupClose">✕</button>
+</div>
+
+<script src="js/dashboard.js"></script>
+<script src="js/nav-fix.js"></script>
+
+<!-- Auth Session Bootstrap -->
+<script>
+(function(){
+  var raw = sessionStorage.getItem('ts_session');
+  if(!raw){ window.location.replace('login.html'); return; }
+  try{
+    var sess = JSON.parse(raw);
+    var av   = document.getElementById('userAvatar');
+    var nm   = document.getElementById('userName');
+    var rb   = document.getElementById('userRoleBadge');
+    if(av) av.textContent  = sess.avatar  || 'AR';
+    if(nm) nm.textContent  = sess.display || sess.username || 'User';
+    if(rb){
+      rb.textContent = (sess.badge||'') + ' ' + (sess.role||'User');
+      rb.style.background = sess.role === 'Admin'
+        ? 'linear-gradient(135deg,#16a34a,#22c55e)'
+        : 'linear-gradient(135deg,#0369a1,#38bdf8)';
+    }
+  }catch(e){ sessionStorage.removeItem('ts_session'); window.location.replace('login.html'); }
+})();
+
+function doLogout(){
+  if(confirm('Sign out of TreeSense AI?')){
+    sessionStorage.removeItem('ts_session');
+    window.location.replace('login.html');
+  }
+}
+</script>
+</body>
+</html>

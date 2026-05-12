@@ -1,0 +1,69 @@
+# ============================================================
+# TreeSense AI — .gitignore
+# ============================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+*.env
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# AI Model files (store in DVC or S3)
+backend/app/models_store/*.joblib
+backend/app/models_store/*.pkl
+backend/app/models_store/*.h5
+backend/app/models_store/*.pt
+
+# Logs
+*.log
+logs/
+
+# Node / Frontend
+node_modules/
+.npm
+.cache/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Secrets
+*.pem
+*.key
+*.crt
+firebase-credentials.json
+deployment/firebase-credentials.json
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Alembic
+alembic/versions/__pycache__/
+
+# OS
+desktop.ini
