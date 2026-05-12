@@ -139,4 +139,5 @@ npx live-server frontend/
 
 **Prof. Anjit Raja R**  
 Centre for Innovation and Incubation, Rathinam Global University  
+🔗 [LinkedIn Profile](https://www.linkedin.com/in/profanjitraja/)  
 *Project Lead — Tree Behaviour Analysis System 2026*
